@@ -4,10 +4,6 @@ import {
   NotchShape,
   DribbbleShape,
   SparkIcon,
-  CodeBubble,
-  IdeaBubble,
-  AsteriskIcon,
-  DashedArc,
 } from './DecorativeElements.jsx';
 
 export default function Hero() {
@@ -49,7 +45,7 @@ export default function Hero() {
           <div className="hero-actions">
             <button className="pill-btn pill-btn--primary" onClick={noop}>
               REGISTER
-              <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-hidden="true" focusable="false">
                 <path
                   d="M1 6h13M9 1l5 5-5 5"
                   stroke="currentColor"
@@ -60,7 +56,7 @@ export default function Hero() {
               </svg>
             </button>
             <button className="pill-btn pill-btn--secondary" onClick={noop}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
                 <path
                   d="M17 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 5 18.5V20M12 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM19 20v-1.5a3.5 3.5 0 0 0-2.4-3.32M15.5 4.16a3.5 3.5 0 0 1 0 6.68"
                   stroke="currentColor"
@@ -74,23 +70,21 @@ export default function Hero() {
           </div>
         </div>
 
+        {/* hero-woman.png already contains the pink hexagon, the code bubble,
+            the bulb, the asterisk and the dashed arc. Overlaying CSS copies of
+            those on top of it drew each ornament twice, so the artwork is now
+            presented on its own. */}
         <div className="hero-visual">
-          <span className="hero-visual__shape" aria-hidden="true" />
-
           <div className="hero-visual__frame">
             <img
               src="/hero-woman.png"
-              alt="A woman in technology working on her laptop"
+              alt="A woman in technology smiling while working on her laptop, surrounded by code, idea and spark motifs"
+              width="1536"
+              height="1024"
+              fetchpriority="high"
+              decoding="async"
             />
           </div>
-
-          <CodeBubble className="hero-visual__bubble hero-visual__bubble--code" />
-          <IdeaBubble className="hero-visual__bubble hero-visual__bubble--idea" />
-
-          <DashedArc className="hero-visual__dashes" />
-          <span className="hero-visual__spark" aria-hidden="true">
-            <AsteriskIcon />
-          </span>
         </div>
       </div>
     </header>

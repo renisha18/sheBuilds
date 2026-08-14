@@ -15,8 +15,30 @@
   --font-display: "Baloo 2", "Segoe UI", sans-serif;
   --font-body: "Inter", "Segoe UI", sans-serif;
 
-  --frame-radius: 34px;
+  --frame-radius: clamp(20px, 2.2vw, 34px);
   --pill-radius: 999px;
+
+  /* ----- Responsive rhythm -----
+     --page-pad  gutter between the frame and the viewport edge.
+     --deco-out  how far the frame ornaments hang outside the frame. It is kept
+                 strictly smaller than --page-pad at EVERY viewport width
+                 (2.3vw < 3vw, 34px < 40px, 6px < 12px), which is what
+                 structurally prevents the ornaments from ever causing
+                 horizontal overflow. */
+  --page-pad: clamp(12px, 3vw, 40px);
+  --deco-out: clamp(6px, 2.3vw, 34px);
+
+  --frame-pad-x: clamp(16px, 4vw, 64px);
+  --hero-gap: clamp(20px, 3.4vw, 48px);
+
+  /* hero-woman.png is a 1536x1024 canvas whose visible artwork occupies
+     x 176..1368 / y 22..1013 — i.e. ~11.4% of the width is transparent on the
+     left and ~10.9% on the right, while the top/bottom are nearly flush.
+     Pulling the image outwards horizontally by LESS than that transparent
+     padding makes the subject read larger without the artwork itself ever
+     reaching the gutter or the frame border. Kept below both --frame-pad-x
+     (3vw < 4vw, 44px < 64px) and --hero-gap (3vw < 3.4vw, 44px < 48px). */
+  --art-bleed: clamp(0px, 3vw, 44px);
 }
 
 * {
@@ -28,11 +50,20 @@ html, body {
   padding: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--bg-outer);
   font-family: var(--font-body);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  /* Final safety net: the layout math above already keeps everything inside the
+     viewport, but `clip` guarantees a stray ornament can never produce a
+     horizontal scrollbar. `clip` (not `hidden`) avoids creating a scroll
+     container on the block axis. */
+  overflow-x: clip;
 }
 
 button {
@@ -42,15 +73,15 @@ button {
 
 img {
   max-width: 100%;
+  height: auto;
   display: block;
 }
 
 .page {
   min-height: 100vh;
+  min-height: 100svh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(14px, 3vw, 40px);
+  padding: var(--page-pad);
 }
 
 /* ---------- Hero frame ---------- */
@@ -59,11 +90,18 @@ img {
   position: relative;
   width: 100%;
   max-width: 1536px;
-  margin: 0 auto;
+  /* As a flex item the frame would default to min-width:auto and refuse to
+     shrink below its own min-content width, which is how a single long word or
+     a wide image starts pushing the page sideways. */
+  min-width: 0;
+  /* auto margins centre the frame but collapse to 0 when the frame is taller
+     than the viewport, so a tall mobile hero is never clipped at the top the
+     way align-items:center would clip it. */
+  margin: auto;
   background: var(--bg-frame);
   border: 2.5px solid var(--ink);
   border-radius: var(--frame-radius);
-  padding: clamp(20px, 3vw, 40px) clamp(24px, 5vw, 64px) clamp(40px, 5vw, 64px);
+  padding: clamp(16px, 2.6vw, 40px) var(--frame-pad-x) clamp(30px, 4.4vw, 64px);
   overflow: visible;
   box-shadow: 0 18px 40px -20px rgba(36, 21, 18, 0.35);
 }
@@ -82,22 +120,25 @@ img {
 /* ---------- Navbar ---------- */
 
 .navbar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: clamp(12px, 2vw, 24px);
   padding: 8px 4px 0;
 }
 
 .navbar__logo {
-  height: clamp(46px, 5vw, 60px);
+  height: clamp(40px, 5vw, 60px);
   width: auto;
+  flex: none;
 }
 
 .navbar__links {
   display: flex;
   align-items: center;
-  gap: clamp(20px, 3vw, 44px);
+  gap: clamp(16px, 2.8vw, 44px);
+  min-width: 0;
 }
 
 .navbar__link {
@@ -106,10 +147,11 @@ img {
   padding: 6px 2px;
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 14px;
+  font-size: clamp(12.5px, 1.05vw, 14px);
   letter-spacing: 0.04em;
   color: var(--ink);
   position: relative;
+  white-space: nowrap;
 }
 
 .navbar__link:hover {
@@ -118,7 +160,9 @@ img {
 
 .navbar__link:focus-visible,
 .pill-btn:focus-visible,
-.navbar__register:focus-visible {
+.navbar__register:focus-visible,
+.navbar__toggle:focus-visible,
+.navbar__mobile-link:focus-visible {
   outline: 3px solid var(--teal);
   outline-offset: 3px;
 }
@@ -128,10 +172,11 @@ img {
   color: var(--cream-text);
   border: 2px solid var(--ink);
   border-radius: var(--pill-radius);
-  padding: 11px 26px;
+  padding: 11px clamp(18px, 1.9vw, 26px);
   font-weight: 700;
-  font-size: 13.5px;
+  font-size: clamp(12px, 1vw, 13.5px);
   letter-spacing: 0.06em;
+  white-space: nowrap;
   box-shadow: 3px 3px 0 var(--ink);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -141,15 +186,56 @@ img {
   box-shadow: 4px 4px 0 var(--ink);
 }
 
-.navbar__mobile-toggle {
+.navbar__toggle {
   display: none;
   background: none;
   border: 2px solid var(--ink);
-  border-radius: 10px;
-  width: 42px;
-  height: 42px;
+  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  flex: none;
   align-items: center;
   justify-content: center;
+  color: var(--ink);
+}
+
+/* Mobile menu panel — only ever displayed at mobile widths, so resizing the
+   window while it is open cannot leave a stray panel on desktop. */
+.navbar__mobile {
+  display: none;
+}
+
+.navbar__mobile-list {
+  display: grid;
+  gap: 4px;
+}
+
+.navbar__mobile-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 12px;
+  min-height: 48px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.navbar__mobile-link:hover {
+  background: rgba(143, 29, 44, 0.06);
+  color: var(--maroon);
+}
+
+.navbar__mobile .navbar__register {
+  width: 100%;
+  margin-top: 10px;
+  padding-block: 14px;
+  font-size: 13.5px;
 }
 
 /* ---------- Hero body layout ---------- */
@@ -159,29 +245,37 @@ img {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   align-items: center;
-  gap: clamp(24px, 4vw, 48px);
-  margin-top: clamp(24px, 4vw, 40px);
+  gap: var(--hero-gap);
+  margin-top: clamp(18px, 3vw, 40px);
 }
 
 .hero-copy {
   position: relative;
   z-index: 2;
+  min-width: 0;
+  /* Type in this column is sized in `cqi` (percent of the column width) rather
+     than `vw`, so "SHE BUILDS" stays on a single line at every breakpoint —
+     including the two-column desktop layout, where the column is only ~42% of
+     the viewport. */
+  container-type: inline-size;
 }
 
 .eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
   background: var(--bg-frame);
   border: 1.5px solid var(--maroon);
   color: var(--maroon);
   border-radius: var(--pill-radius);
-  padding: 7px 16px;
+  padding: 7px clamp(11px, 3.4cqi, 16px);
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: 11.5px;
+  font-size: clamp(9.5px, 3.1cqi, 11.5px);
+  line-height: 1.35;
   letter-spacing: 0.08em;
-  margin-bottom: clamp(18px, 2.5vw, 26px);
+  margin-bottom: clamp(16px, 2.5vw, 26px);
 }
 
 .eyebrow svg {
@@ -200,7 +294,9 @@ img {
 .hero-heading__primary {
   display: block;
   font-weight: 800;
-  font-size: clamp(52px, 7.4vw, 108px);
+  /* vw fallback first, then the container-relative value that actually fits. */
+  font-size: clamp(2.25rem, 7.4vw, 6.75rem);
+  font-size: clamp(2.25rem, 18cqi, 6.75rem);
   text-transform: uppercase;
   letter-spacing: 0.005em;
 }
@@ -208,7 +304,8 @@ img {
 .hero-heading__secondary {
   display: block;
   font-weight: 700;
-  font-size: clamp(28px, 3.6vw, 52px);
+  font-size: clamp(1.5rem, 3.6vw, 3.25rem);
+  font-size: clamp(1.5rem, 8.6cqi, 3.25rem);
   text-transform: uppercase;
   margin-top: 2px;
 }
@@ -217,11 +314,11 @@ img {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: clamp(10px, 1.6vw, 16px) 0 clamp(20px, 2.6vw, 28px);
+  margin: clamp(10px, 1.6vw, 16px) 0 clamp(18px, 2.6vw, 28px);
 }
 
 .heading-flourish__line {
-  width: 64px;
+  width: clamp(44px, 12cqi, 64px);
   height: 4px;
   border-radius: 4px;
   background: var(--coral);
@@ -234,11 +331,12 @@ img {
 
 .hero-description {
   font-family: var(--font-body);
-  font-size: clamp(15px, 1.15vw, 17px);
+  font-size: clamp(14.5px, 1.15vw, 17px);
   line-height: 1.55;
   color: var(--ink);
   max-width: 40ch;
-  margin: 0 0 clamp(26px, 3.2vw, 36px);
+  text-wrap: pretty;
+  margin: 0 0 clamp(22px, 3.2vw, 36px);
 }
 
 .hero-actions {
@@ -251,14 +349,20 @@ img {
 .pill-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
+  min-height: 48px;
   border-radius: var(--pill-radius);
   font-weight: 700;
-  font-size: 14px;
+  font-size: clamp(12.5px, 3.4cqi, 14px);
   letter-spacing: 0.05em;
-  padding: 15px 26px;
+  padding: 14px clamp(18px, 5cqi, 26px);
   border: 2px solid var(--ink);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pill-btn svg {
+  flex: none;
 }
 
 .pill-btn--primary {
@@ -290,144 +394,86 @@ img {
   background: rgba(143, 29, 44, 0.06);
 }
 
-/* ---------- Visual column ---------- */
+/* ---------- Visual column ----------
+   hero-woman.png is a single finished composition: the pink hexagon, the teal
+   code bubble, the yellow bulb, the coral asterisk and the dashed arc are all
+   painted into the artwork. Nothing is overlaid on top of it, so nothing can
+   cover her face or the laptop. The greyscale look is part of the artwork —
+   there is deliberately no CSS filter here. */
 
 .hero-visual {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: clamp(340px, 34vw, 480px);
-}
-
-.hero-visual__shape {
-  position: absolute;
-  width: min(92%, 460px);
-  aspect-ratio: 1 / 1;
-  background: var(--pink);
-  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
-  z-index: 0;
+  min-width: 0;
 }
 
 .hero-visual__frame {
   position: relative;
-  z-index: 1;
-  width: min(84%, 400px);
-  aspect-ratio: 4 / 4.6;
-  overflow: hidden;
-  border-radius: 18px;
+  width: 100%;
+  margin-inline: auto;
 }
 
 .hero-visual__frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  
+  /* Width drives the size; height follows the intrinsic 3:2 ratio, so the
+     artwork can never be stretched, squashed or cropped. object-fit:contain is
+     kept as a belt-and-braces guarantee. */
+  width: calc(100% + var(--art-bleed) * 2);
+  max-width: none;
+  height: auto;
+  aspect-ratio: 1536 / 1024;
+  object-fit: contain;
+  margin-inline: calc(-1 * var(--art-bleed));
+  filter: none;
 }
 
-.hero-visual__bubble {
-  position: absolute;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
-}
-
-.hero-visual__bubble--code {
-  top: 6%;
-  left: -2%;
-  background: var(--teal);
-  width: 62px;
-  height: 46px;
-  border-radius: 14px 14px 14px 3px;
-}
-
-.hero-visual__bubble--idea {
-  top: 32%;
-  right: -4%;
-  background: var(--yellow);
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
-  transform: rotate(6deg);
-}
-
-.hero-visual__spark {
-  position: absolute;
-  bottom: 8%;
-  left: -6%;
-  z-index: 2;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--coral);
-  border: 2px solid var(--ink);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hero-visual__dashes {
-  position: absolute;
-  bottom: 2%;
-  left: -13%;
-  width: 90px;
-  height: 90px;
-  z-index: 0;
-}
-
-.hero-visual__tick {
-  position: absolute;
-  top: -2%;
-  right: 22%;
-  z-index: 2;
-  color: var(--maroon);
-}
-
-/* ---------- Frame-edge decorative notches ---------- */
+/* ---------- Frame-edge decorative ornaments ---------- */
 
 .corner-deco {
   position: absolute;
   z-index: 3;
+  width: var(--deco-w);
   filter: drop-shadow(2px 3px 0 rgba(36, 21, 18, 0.9));
 }
 
 .corner-deco--figma {
-  top: -34px;
+  --deco-w: clamp(34px, 4vw, 58px);
+  top: calc(-1 * var(--deco-out));
   left: 30%;
-  width: 58px;
 }
 
 .corner-deco--pink-tl {
+  --deco-w: clamp(38px, 5.3vw, 76px);
   top: 22%;
-  left: -34px;
-  width: 76px;
+  left: calc(-1 * var(--deco-out));
 }
 
 .corner-deco--teal-tr {
+  --deco-w: clamp(42px, 5.8vw, 84px);
   top: 14%;
-  right: -40px;
-  width: 84px;
+  right: calc(-1 * var(--deco-out));
 }
 
 .corner-deco--yellow-br {
+  --deco-w: clamp(34px, 4.6vw, 66px);
   bottom: 6%;
-  right: -30px;
-  width: 66px;
+  right: calc(-1 * var(--deco-out));
 }
 
 .corner-deco--purple-bl {
-  bottom: -30px;
-  left: 4%;
-  width: 60px;
+  --deco-w: clamp(32px, 4.2vw, 60px);
+  bottom: calc(-1 * var(--deco-out));
+  left: 6%;
 }
 
+/* Sized so that the part of it hanging INSIDE the frame (width − --deco-out,
+   i.e. 3.7vw / 54px max) always stays within --frame-pad-x (4vw / 64px max) and
+   therefore never reaches the CTA buttons it sits beside. */
 .corner-deco--dribbble {
+  --deco-w: clamp(44px, 6vw, 88px);
   bottom: 6%;
-  left: -46px;
-  width: 92px;
+  left: calc(-1 * var(--deco-out));
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -445,26 +491,28 @@ img {
   50% { transform: translateY(-6px); }
 }
 
-/* ---------- Tablet ---------- */
+/* ---------- Tablet: single column, artwork above the copy ---------- */
 
 @media (max-width: 980px) {
   .hero-body {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-visual {
     order: -1;
-    min-height: clamp(280px, 60vw, 380px);
   }
 
-  .hero-copy {
-    text-align: left;
+  /* Stacked, the artwork would otherwise grow to the full frame width. Cap it
+     so the composition keeps a sensible scale and the copy below stays in view. */
+  .hero-visual__frame {
+    max-width: min(100%, 560px);
   }
 
-  .corner-deco--pink-tl,
-  .corner-deco--teal-tr,
-  .corner-deco--purple-bl,
-  .corner-deco--dribbble {
+  /* The two lowest ornaments sit exactly where the stacked CTA buttons land, so
+     they are dropped rather than allowed to collide. The side and top ones stay
+     — they overlap only the empty margin beside the centred artwork. */
+  .corner-deco--dribbble,
+  .corner-deco--purple-bl {
     display: none;
   }
 }
@@ -476,12 +524,33 @@ img {
     display: none;
   }
 
-  .navbar__mobile-toggle {
+  .navbar__toggle {
     display: flex;
   }
 
-  .navbar {
-    flex-wrap: wrap;
+  .navbar__mobile[data-open='true'] {
+    display: block;
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: var(--bg-frame);
+    border: 2px solid var(--ink);
+    border-radius: 18px;
+    padding: 12px;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  /* Full frame width for the artwork: with no adjacent column, the bleed can
+     run out to the frame's inner padding (less 2px, so it never touches the
+     border) and the composition reads as an intentional mobile hero. */
+  :root {
+    --art-bleed: calc(var(--frame-pad-x) - 2px);
+  }
+
+  .hero-visual__frame {
+    max-width: 100%;
   }
 
   .hero-actions {
@@ -489,16 +558,24 @@ img {
     align-items: stretch;
   }
 
-  .pill-btn {
-    justify-content: center;
+  /* At mobile widths the artwork spans the full frame, so a side ornament would
+     float over the composition instead of the frame edge. */
+  .corner-deco--pink-tl,
+  .corner-deco--teal-tr {
+    display: none;
+  }
+}
+
+/* ---------- Very small phones (320–400px) ---------- */
+
+@media (max-width: 400px) {
+  .navbar {
+    padding-top: 4px;
   }
 
-  .corner-deco--figma {
-    width: 40px;
-    top: -22px;
-  }
-
-  .hero-description {
-    max-width: 100%;
+  /* Only the top chip is left: at this width every other ornament would sit on
+     top of either the artwork or the CTAs. */
+  .corner-deco--yellow-br {
+    display: none;
   }
 }
