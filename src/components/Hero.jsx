@@ -65,7 +65,7 @@ export default function Hero() {
                   strokeLinejoin="round"
                 />
               </svg>
-              JOIN OUR COMMUNITY
+              EXPLORE MORE
             </button>
           </div>
         </div>
